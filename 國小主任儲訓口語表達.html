@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主任儲訓：口語表達抽題系統</title>
+    <style>
+        :root {
+            /* 依據 1.png 設計之大氣校園典雅色系 */
+            --bg-color: #1a2f31;       /* 極深墨綠底色 */
+            --panel-bg: #254043;       /* 面板深綠色 */
+            --card-cream: #faf6f0;     /* 溫暖卡其白（卡片主體） */
+            --text-dark: #203538;      /* 墨綠碳黑字體 */
+            --text-white: #ffffff;     /* 白色字體 */
+            --accent-gold: #e2b13c;    /* 香檳金 */
+            --accent-coral: #d96b43;   /* 警示珊瑚紅 */
+            --btn-start: #e2b13c;      /* 開始按鈕金色 */
+            --btn-draw: #386166;       /* 抽題按鈕中綠 */
+            --input-bg: rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            font-family: "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-white);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            color: var(--accent-gold);
+            text-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        }
+
+        /* 雙欄版面 */
+        .main-layout {
+            display: flex;
+            gap: 25px;
+            flex-direction: row;
+            align-items: stretch;
+        }
+
+        /* 左側：精緻實體感題卡 */
+        .left-column {
+            flex: 6.5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 右側：現代控制儀表板 */
+        .right-column {
+            flex: 3.5;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 仿實體卡片樣式 */
+        .card {
+            background-color: var(--card-cream);
+            color: var(--text-dark);
+            border-radius: 24px;
+            padding: 25px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            border: 4px solid var(--accent-gold);
+            position: relative;
+            min-height: 480px;
+            box-sizing: border-box;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        /* 卡片裝飾金線 */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(226, 177, 60, 0.4);
+            border-radius: 16px;
+            pointer-events: none;
+        }
+
+        /* 圖片容器 */
+        .image-container {
+            width: 100%;
+            flex-grow: 1;
+            background-color: rgba(32, 53, 56, 0.05);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border: 1px dashed rgba(32, 53, 56, 0.2);
+            position: relative;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .card-content {
+            text-align: center;
+            z-index: 2;
+        }
+
+        .card-no {
+            display: inline-block;
+            border: 2px solid var(--text-dark);
+            padding: 6px 25px;
+            font-size: 24px;
+            font-weight: bold;
+            background: rgba(32, 53, 56, 0.05);
+            border-radius: 30px;
+            color: var(--text-dark);
+            letter-spacing: 1px;
+        }
+
+        /* 狀態顯示器 */
+        .status-badge {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--accent-gold);
+            letter-spacing: 1px;
+        }
+
+        /* 區間設定 */
+        .range-selector {
+            background: var(--panel-bg);
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .range-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--accent-gold);
+            text-align: left;
+        }
+
+        .range-inputs {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .range-inputs input {
+            width: 70px;
+            background: var(--input-bg);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .range-inputs input:focus {
+            border-color: var(--accent-gold);
+            outline: none;
+        }
+
+        /* 計時器面板 */
+        .timers {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .timer-box {
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .timer-box.active {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 15px rgba(226, 177, 60, 0.25);
+        }
+
+        .timer-label {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .timer-value {
+            font-size: 46px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 2px;
+        }
+
+        /* 運作中發光樣式 */
+        .timer-box.active .timer-value {
+            color: var(--accent-gold);
+        }
+        
+        .timer-box.speech-active.warning-zone .timer-value {
+            color: var(--accent-coral);
+            animation: pulse 1s infinite alternate;
+        }
+
+        /* 控制按鈕群組 */
+        .control-group {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+        }
+
+        .btn {
+            border: none;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+
+        .btn-draw {
+            background-color: var(--btn-draw);
+            color: var(--text-white);
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 100%;
+        }
+
+        .btn-draw:hover {
+            background-color: #45767c;
+        }
+
+        .btn-start {
+            background-color: var(--btn-start);
+            color: var(--text-dark);
+        }
+
+        .btn-start:hover {
+            background-color: #f0c254;
+            transform: translateY(-2px);
+        }
+
+        .btn-pause {
+            background-color: transparent;
+            color: var(--text-white);
+            border: 1.5px solid rgba(255,255,255,0.4);
+        }
+
+        .btn-pause:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .btn-reset {
+            background-color: transparent;
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            padding: 8px;
+            border: none;
+            box-shadow: none;
+            text-decoration: underline;
+        }
+
+        .btn-reset:hover {
+            color: var(--text-white);
+        }
+
+        .audio-test {
+            font-size: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px dashed rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.7);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .audio-test:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-white);
+        }
+
+        .note {
+            font-size: 12px;
+            opacity: 0.5;
+            margin-top: 25px;
+            line-height: 1.6;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes pulse {
+            from { text-shadow: 0 0 5px rgba(217,107,67,0.2); }
+            to { text-shadow: 0 0 15px rgba(217,107,67,0.6); }
+        }
+
+        /* 手機版適應 */
+        @media (max-width: 768px) {
+            .main-layout { flex-direction: column; }
+            .left-column, .right-column { width: 100%; }
+            .card { min-height: 380px; }
+            .timer-value { font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h1>主任儲訓：口語表達實務系統</h1>
+
+    <div class="main-layout">
+        <!-- 左側：仿實體卡片 -->
+        <div class="left-column">
+            <div class="card" id="cardArea">
+                <div class="image-container" id="imgDisplay">
+                    <div style="text-align: center; color: var(--text-dark); opacity: 0.6; padding: 20px;">
+                        <p style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">歡迎進入模擬考場</p>
+                        <p style="font-size: 13px;">請先在右側「設定範圍」，接著點擊「隨機抽取題目」開始！</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="card-no" id="qNo">準備就緒</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：計時與控制 -->
+        <div class="right-column">
+            <!-- 狀態看板 -->
+            <div class="status-badge" id="statusBadge">目前狀態：等待抽題</div>
+
+            <!-- 範圍設定 -->
+            <div class="range-selector">
+                <div class="range-title">設定抽題範圍 (1-<span id="maxRangeText">40</span>)</div>
+                <div class="range-inputs">
+                    <input type="number" id="startRange" value="1" min="1">
+                    <span>至</span>
+                    <input type="number" id="endRange" value="40" min="1">
+                </div>
+            </div>
+
+            <!-- 雙階段計時器 -->
+            <div class="timers">
+                <div class="timer-box" id="prepBox">
+                    <div class="timer-label">
+                        <span>準備倒數 (2.5分)</span>
+                        <span id="prepStateText" style="font-size: 11px;">未開始</span>
+                    </div>
+                    <div id="prepTime" class="timer-value">02:30</div>
+                </div>
+                <div class="timer-box" id="speechBox">
+                    <div class="timer-label">
+                        <span>演說倒數 (2.5分)</span>
+                        <span id="speechStateText" style="font-size: 11px;">未開始</span>
+                    </div>
+                    <div id="speechTime" class="timer-value">02:30</div>
+                </div>
+            </div>
+            
+            <!-- 控制按鈕 -->
+            <button class="btn btn-draw" onclick="drawCard()">🎲 隨機抽取題目</button>
+
+            <div class="control-group">
+                <button class="btn btn-start" id="startBtn" onclick="toggleTimer()" disabled>▶ 開始計時</button>
+                <button class="btn btn-pause" id="pauseBtn" onclick="pauseTimer()" disabled>⏸ 暫停</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                <button class="audio-test" onclick="testBells()">🔔 測試鈴聲</button>
+                <button class="btn-reset" onclick="resetTimers()">重置計時</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="note">
+        ※ <b>鈴聲規則</b>：演說倒數進行至 <b>00:30（已講 2 分鐘）</b>響鈴一短聲；<b>00:00（時間到）</b>響鈴兩短聲。<br>
+        ※ <b>使用說明</b>：抽題後計時器不會自動開始，請在思維構思準備好後，手動點選「<b>開始計時</b>」。
+    </div>
+</div>
+
+<script>
+    // 40張圖片對應的 Google Drive 連結配置
+    const questions = [
+        { id: 1, driveUrl: "https://drive.google.com/file/d/1rIMHsrwxBwMUA6MFbdU00668U8huCVix/view?usp=drive_link" }, 
+        { id: 2, driveUrl: "https://drive.google.com/file/d/18KQgVai66hfVQLATPeZgT9Kr0TkLMaxa/view?usp=drive_link" }, 
+        { id: 3, driveUrl: "https://drive.google.com/file/d/1nxVOaBETK_Cj0hLTT3RYPUtzFCUXfJsn/view?usp=drive_link" },
+        { id: 4, driveUrl: "https://drive.google.com/file/d/1URn7wlpDV6Z6-jB8rwcYkI_EkUpMvkUc/view?usp=drive_link" }, 
+        { id: 5, driveUrl: "https://drive.google.com/file/d/1nUjvmpPQLOKZs15JZksQC4e8vZKae4U6/view?usp=drive_link" }, 
+        { id: 6, driveUrl: "https://drive.google.com/file/d/1xRyUeHed4bxOTlkf8rywBosRD8bNyO4w/view?usp=drive_link" },
+        { id: 7, driveUrl: "https://drive.google.com/file/d/1Zpu1mzS-7PCWCKmo7G_OmQLZUEvLsLnT/view?usp=drive_link" }, 
+        { id: 8, driveUrl: "https://drive.google.com/file/d/1iAuaSOKmvbNODEJY-CpNHBDrI-GSV5PW/view?usp=drive_link" }, 
+        { id: 9, driveUrl: "https://drive.google.com/file/d/1ajxsxQjL_3s7FtoMHKOdJTaMhUzz8gNR/view?usp=drive_link" },
+        { id: 10, driveUrl: "https://drive.google.com/file/d/1GqOiYGiUyE-MQjdaDsbkEI1GfF-AqRDJ/view?usp=drive_link" }, 
+        { id: 11, driveUrl: "https://drive.google.com/file/d/1JKQ7SumFeMUr-h_FsoTwrxrSvduhEGpo/view?usp=drive_link" }, 
+        { id: 12, driveUrl: "https://drive.google.com/file/d/1Grr9t_pnkrPBaCQjfbdyK0tljPGCKge6/view?usp=drive_link" },
+        { id: 13, driveUrl: "https://drive.google.com/file/d/1lStyQhVg1Db__iHtnItkg_bxd4Hl91a_/view?usp=drive_link" }, 
+        { id: 14, driveUrl: "https://drive.google.com/file/d/1ECRIL4bOap6n7Ysv6kvlYweIfVFwxqEF/view?usp=drive_link" }, 
+        { id: 15, driveUrl: "https://drive.google.com/file/d/1BHOB_hFRI-0Uw_pVtYXsl4aY_Hz-bYOV/view?usp=drive_link" },
+        { id: 16, driveUrl: "https://drive.google.com/file/d/1G26ceLVpxZkpPk9Iryz-CRcORglUcZsY/view?usp=drive_link" }, 
+        { id: 17, driveUrl: "https://drive.google.com/file/d/1vYDwHH22OOicLVJ0O_JlpburkiD-lNG6/view?usp=drive_link" }, 
+        { id: 18, driveUrl: "https://drive.google.com/file/d/1xrS8YUbxiZ95QCNumSXduZj3rX3hbtMp/view?usp=drive_link" },
+        { id: 19, driveUrl: "https://drive.google.com/file/d/1JxEUesEbyGU-Rwl-A_detV0-i_2VHO5D/view?usp=drive_link" }, 
+        { id: 20, driveUrl: "https://drive.google.com/file/d/1pPoItw69fVztnC07qDWE_CWVYoJkjRiH/view?usp=drive_link" }, 
+        { id: 21, driveUrl: "https://drive.google.com/file/d/1hh6rj3hhextCQPBZXCghXVnOivoe6m8w/view?usp=drive_link" },
+        { id: 22, driveUrl: "https://drive.google.com/file/d/1Y7zF0gEj53tcEf90gyMx5QiHh5psIa4V/view?usp=drive_link" }, 
+        { id: 23, driveUrl: "https://drive.google.com/file/d/1DBQ5oB-ApgA3oZ9F8CAvAH2OauDUMFLA/view?usp=drive_link" }, 
+        { id: 24, driveUrl: "https://drive.google.com/file/d/1ARWrq2KSfkHuzRrMhpO0YTjO5JmoZ5bx/view?usp=drive_link" },
+        { id: 25, driveUrl: "https://drive.google.com/file/d/17ur7-GJSJ-G3kgZCV2gdaFWxRmnayZiF/view?usp=drive_link" }, 
+        { id: 26, driveUrl: "https://drive.google.com/file/d/1nEdf7PUEgtd8fGGUQouT_3H_A2MLmswU/view?usp=drive_link" }, 
+        { id: 27, driveUrl: "https://drive.google.com/file/d/1oRriZGn8xz3ceKNiFomKl6HyfXIo7xfv/view?usp=drive_link" },
+        { id: 28, driveUrl: "https://drive.google.com/file/d/1PkI21zPvkp6Gir1aEIy8cWilgvNQRjw1/view?usp=drive_link" }, 
+        { id: 29, driveUrl: "https://drive.google.com/file/d/1MlZgSE-Xbl0lSDzxCp8s5ysKfW6Ns0xL/view?usp=drive_link" }, 
+        { id: 30, driveUrl: "https://drive.google.com/file/d/1lwizOG3m94h9j8QrxxBU-k2Ybti95e8a/view?usp=drive_link" },
+        { id: 31, driveUrl: "https://drive.google.com/file/d/1HVBxCbVvMt7mkU94I7H5Z3KYAFprI22w/view?usp=drive_link" }, 
+        { id: 32, driveUrl: "https://drive.google.com/file/d/17oK_uqpEihazs6aWCJtpRc_v_kICMsaz/view?usp=drive_link" }, 
+        { id: 33, driveUrl: "https://drive.google.com/file/d/18jO9w9_HHuvy1zc_SW8SG5lnaBCpfjur/view?usp=drive_link" },
+        { id: 34, driveUrl: "https://drive.google.com/file/d/1TrwTlPdLPlrqln2tjbC7BKCiRdNnpN_n/view?usp=drive_link" }, 
+        { id: 35, driveUrl: "https://drive.google.com/file/d/1tbO5QSRrFwm63i0j6gisibUfLFtPHUua/view?usp=drive_link" }, 
+        { id: 36, driveUrl: "https://drive.google.com/file/d/1xBfqQuTttvakS5nzAmbXSTQANKk4a3a4/view?usp=drive_link" }, 
+        { id: 37, driveUrl: "https://drive.google.com/file/d/1TpVLZx1svnpEruJ5pqayiLsUdfZu40qQ/view?usp=drive_link" }, 
+        { id: 38, driveUrl: "https://drive.google.com/file/d/1pCQ-JwwlBlBXM8L0T75XGSVZFFWBCzGt/view?usp=drive_link" }, 
+        { id: 39, driveUrl: "https://drive.google.com/file/d/1Ql5aZZG_EEW0jNTWPwGkZwQSgU6x_X47/view?usp=drive_link" }, 
+        { id: 40, driveUrl: "https://drive.google.com/file/d/1plpTioiVoY2QpA0aI9HezJwASfqH0nYm/view?usp=drive_link" }
+    ];
+
+    // 全域計時狀態變數
+    let timerInterval = null;
+    let currentPhase = 'idle'; // 'idle', 'prep', 'speech', 'paused', 'finished'
+    let prepSec = 150;         // 2.5分鐘 = 150秒
+    let speechSec = 150;       // 2.5分鐘 = 150秒
+    
+    // 預防重複響鈴的標記
+    let warned2Min = false;
+    let warnedEnd = false;
+
+    // 初始化頁面動態上限值
+    window.onload = function() {
+        const totalQs = questions.length;
+        document.getElementById('maxRangeText').innerText = totalQs;
+        
+        const startInput = document.getElementById('startRange');
+        const endInput = document.getElementById('endRange');
+        
+        startInput.max = totalQs;
+        endInput.max = totalQs;
+        endInput.value = totalQs; // 預設結束值自動切換為最新總題數 (40)
+    };
+
+    // Web Audio API 仿真銅鈴產生器 (不需要任何外部音檔，支援完全離線)
+    function playChime(type) {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            const now = ctx.currentTime;
+
+            if (type === 'warning') {
+                // 【單聲清脆手鈴聲】 - 代表已演說2分鐘（剩餘30秒）
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                const gain2 = ctx.createGain();
+
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, now); // A5 高音
+                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1320, now); // E6 泛音
+                gain2.gain.setValueAtTime(0.08, now);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+                osc1.connect(gain1); gain1.connect(ctx.destination);
+                osc2.connect(gain2); gain2.connect(ctx.destination);
+
+                osc1.start(now); osc2.start(now);
+                osc1.stop(now + 1.2); osc2.stop(now + 0.8);
+            } 
+            else if (type === 'end') {
+                // 【雙聲結束警示鈴】 - 代表演說2.5分鐘結束
+                const strike = (delay) => {
+                    const strikeTime = now + delay;
+                    const o1 = ctx.createOscillator();
+                    const o2 = ctx.createOscillator();
+                    const g1 = ctx.createGain();
+                    const g2 = ctx.createGain();
+
+                    o1.type = 'sine';
+                    o1.frequency.setValueAtTime(698.46, strikeTime); // F5
+                    g1.gain.setValueAtTime(0.25, strikeTime);
+                    g1.gain.exponentialRampToValueAtTime(0.001, strikeTime + 1.4);
+
+                    o2.type = 'sine';
+                    o2.frequency.setValueAtTime(1046.50, strikeTime); // C6
+                    g2.gain.setValueAtTime(0.08, strikeTime);
+                    g2.gain.exponentialRampToValueAtTime(0.001, strikeTime + 0.9);
+
+                    o1.connect(g1); g1.connect(ctx.destination);
+                    o2.connect(g2); g2.connect(ctx.destination);
+
+                    o1.start(strikeTime); o2.start(strikeTime);
+                    o1.stop(strikeTime + 1.4); o2.stop(strikeTime + 0.9);
+                };
+
+                strike(0);
+                strike(0.4); // 0.4 秒後響第二聲
+            }
+        } catch (e) {
+            console.warn("無法初始化 Web Audio API 響鈴：", e);
+        }
+    }
+
+    // 測試鈴聲功能
+    function testBells() {
+        playChime('warning');
+        setTimeout(() => {
+            playChime('end');
+        }, 1500);
+    }
+
+    // Google Drive 圖片連結自動解析
+    function transformUrl(url) {
+        if (!url) return null;
+        const idMatch = url.match(/[-\w]{25,}/);
+        return idMatch ? `https://lh3.googleusercontent.com/d/${idMatch[0]}` : url;
+    }
+
+    // 點選抽取卡片
+    function drawCard() {
+        // 停止目前的任何計時
+        if (timerInterval) clearInterval(timerInterval);
+
+        // 取得並校驗設定的區間（此處已動態連結至題庫最新總數）
+        let start = parseInt(document.getElementById('startRange').value);
+        let end = parseInt(document.getElementById('endRange').value);
+        const totalQs = questions.length;
+
+        if (isNaN(start) || start < 1) start = 1;
+        if (isNaN(end) || end > totalQs) end = totalQs;
+        if (start > end) {
+            alert("起始題號不能大於結束題號！");
+            return;
+        }
+
+        // 過濾出指定範圍內題目
+        const filtered = questions.filter(q => q.id >= start && q.id <= end);
+        if (filtered.length === 0) {
+            alert("此範圍內無可用題卡！");
+            return;
+        }
+
+        const rand = Math.floor(Math.random() * filtered.length);
+        const q = filtered[rand];
+
+        // 更新介面
+        document.getElementById('qNo').innerText = "第 " + q.id + " 題";
+        
+        const imgContainer = document.getElementById('imgDisplay');
+        const finalUrl = transformUrl(q.driveUrl);
+        
+        if (finalUrl) {
+            imgContainer.innerHTML = `<img src="${finalUrl}" alt="題卡" onerror="handleImgError(this)">`;
+        } else {
+            imgContainer.innerHTML = `
+                <div style="text-align:center; color: var(--text-dark); padding:20px;">
+                    <p style="font-size:22px; font-weight:bold; margin-bottom: 5px;">第 ${q.id} 題 模擬題卡</p>
+                    <p style="font-size:12px; opacity:0.6;">[ 尚未於代碼內填入此題的 Google Drive 圖片連結 ]</p>
+                </div>`;
+        }
+
+        // 卡片切換淡入動畫
+        const cardArea = document.getElementById('cardArea');
+        cardArea.classList.remove('fade-in');
+        void cardArea.offsetWidth;
+        cardArea.classList.add('fade-in');
+
+        // 重置計時狀態，但【不自動開始跑秒】
+        currentPhase = 'idle';
+        prepSec = 150;
+        speechSec = 150;
+        warned2Min = false;
+        warnedEnd = false;
+
+        updateTimerDisplay();
+        updateUIState('ready_to_start');
+    }
+
+    function handleImgError(img) {
+        img.parentElement.innerHTML = `<p style="font-size:12px; color: var(--accent-coral); font-weight:bold; padding:10px;">圖片載入失敗！<br>請確認雲端硬碟檔案共用設定已開啟為「知道連結的人皆可檢視」</p>`;
+    }
+
+    // 更新計時器文字顯示
+    function updateTimerDisplay() {
+        document.getElementById('prepTime').innerText = format(prepSec);
+        document.getElementById('speechTime').innerText = format(speechSec);
+    }
+
+    // 更新右側控制面板的視覺狀態
+    function updateUIState(state) {
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const statusBadge = document.getElementById('statusBadge');
+        
+        const prepBox = document.getElementById('prepBox');
+        const speechBox = document.getElementById('speechBox');
+        
+        const prepState = document.getElementById('prepStateText');
+        const speechState = document.getElementById('speechStateText');
+
+        // 移除所有特定高亮樣式
+        prepBox.classList.remove('active');
+        speechBox.classList.remove('active');
+        speechBox.classList.remove('speech-active', 'warning-zone');
+
+        switch (state) {
+            case 'ready_to_start':
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                startBtn.innerText = "▶ 開始計時";
+                statusBadge.innerText = "目前狀態：待命（已抽題）";
+                statusBadge.style.color = "var(--accent-gold)";
+                prepState.innerText = "已就緒";
+                speechState.innerText = "等待中";
+                break;
+
+            case 'running_prep':
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                statusBadge.innerText = "目前狀態：思維構思準備中...";
+                statusBadge.style.color = "var(--accent-gold)";
+                prepBox.classList.add('active');
+                prepState.innerText = "倒數中...";
+                speechState.innerText = "等待中";
+                break;
+
+            case 'running_speech':
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                statusBadge.innerText = "目前狀態：正式口語演說中！";
+                statusBadge.style.color = "#4caf50"; /* 綠色健康狀態 */
+                speechBox.classList.add('active', 'speech-active');
+                prepState.innerText = "已完成";
+                
+                if (speechSec <= 30) {
+                    speechBox.classList.add('warning-zone');
+                    speechState.innerText = "即將結束！";
+                } else {
+                    speechState.innerText = "進行中...";
+                }
+                break;
+
+            case 'paused':
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                startBtn.innerText = "▶ 恢復計時";
+                statusBadge.innerText = "目前狀態：計時暫停中";
+                statusBadge.style.color = "var(--accent-coral)";
+                prepState.innerText = (currentPhase === 'prep') ? "已暫停" : "已完成";
+                speechState.innerText = (currentPhase === 'speech') ? "已暫停" : "等待中";
+                break;
+
+            case 'finished':
+                startBtn.disabled = true;
+                pauseBtn.disabled = true;
+                statusBadge.innerText = "目前狀態：演練結束！";
+                statusBadge.style.color = "var(--accent-gold)";
+                prepState.innerText = "已完成";
+                speechState.innerText = "時間到";
+                break;
+        }
+    }
+
+    // 切換計時（開始 / 恢復）
+    function toggleTimer() {
+        if (currentPhase === 'idle' || currentPhase === 'ready_to_start') {
+            currentPhase = 'prep';
+        } else if (currentPhase === 'paused') {
+            currentPhase = tempPhase; // 恢復之前暫停的階段
+        }
+
+        runCountdownLogic();
+    }
+
+    let tempPhase = 'prep'; // 暫存暫停前的階段
+
+    // 暫停計時
+    function pauseTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            tempPhase = currentPhase;
+            currentPhase = 'paused';
+            updateUIState('paused');
+        }
+    }
+
+    // 核心計時排程邏輯
+    function runCountdownLogic() {
+        if (timerInterval) clearInterval(timerInterval);
+
+        if (currentPhase === 'prep') {
+            updateUIState('running_prep');
+        } else if (currentPhase === 'speech') {
+            updateUIState('running_speech');
+        }
+
+        timerInterval = setInterval(() => {
+            if (currentPhase === 'prep') {
+                if (prepSec > 0) {
+                    prepSec--;
+                    updateTimerDisplay();
+                } else {
+                    // 準備時間到，轉換到演說階段
+                    currentPhase = 'speech';
+                    updateUIState('running_speech');
+                }
+            } 
+            else if (currentPhase === 'speech') {
+                if (speechSec > 0) {
+                    speechSec--;
+                    updateTimerDisplay();
+
+                    // 【關鍵提醒響鈴一】已正式演說2分鐘（即倒數剩餘30秒）
+                    if (speechSec === 30 && !warned2Min) {
+                        playChime('warning');
+                        warned2Min = true;
+                    }
+
+                    // 剩餘 30 秒進入緊急警示發光
+                    if (speechSec <= 30) {
+                        updateUIState('running_speech');
+                    }
+                } else {
+                    // 【關鍵提醒響鈴二】2分30秒演說時間完全結束
+                    if (!warnedEnd) {
+                        playChime('end');
+                        warnedEnd = true;
+                    }
+                    clearInterval(timerInterval);
+                    currentPhase = 'finished';
+                    updateUIState('finished');
+                }
+            }
+        }, 1000);
+    }
+
+    // 手動重置計時器
+    function resetTimers() {
+        if (timerInterval) clearInterval(timerInterval);
+        prepSec = 150;
+        speechSec = 150;
+        currentPhase = 'idle';
+        warned2Min = false;
+        warnedEnd = false;
+        updateTimerDisplay();
+        
+        // 判斷當前是否有選中題目
+        if (document.getElementById('qNo').innerText !== "準備就緒") {
+            updateUIState('ready_to_start');
+        } else {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = true;
+        }
+    }
+
+    function format(total) {
+        const m = Math.floor(total / 60);
+        const s = total % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+</script>
+
+</body>
+</html>
